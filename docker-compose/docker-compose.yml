@@ -1,0 +1,129 @@
+version: "2.2"
+
+services:
+
+    redis:
+        image: redis
+        network_mode: "host"
+        command: redis-server --port ${REDIS_PORT}
+        mem_limit: 1000000000 #must be in bytes
+        memswap_limit: 2000000000
+        mem_swappiness: 1
+        cpus: 1
+        cpu_percent: 50
+
+    airflow-webserver:
+        image: local/airflow:1.9.0
+        restart: always
+        depends_on:
+            - redis
+        environment:
+            - AIRFLOW_WEB_USER=${AIRFLOW_WEB_USER}
+            - AIRFLOW_WEB_EMAIL=${AIRFLOW_WEB_EMAIL}
+            - AIRFLOW_WEB_PASSWORD=${AIRFLOW_WEB_PASSWORD}
+            - AIRFLOW_PORT=${AIRFLOW_PORT}
+            - FLOWER_PORT=${FLOWER_PORT}
+            - WORKER_LOG_PORT=${WORKER_LOG_PORT}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - LOAD_EXAMPLES=${LOAD_EXAMPLES}
+            - EXECUTOR=${EXECUTOR}
+            - POSTGRES_HOST=${POSTGRES_HOST}
+            - POSTGRES_PORT=${POSTGRES_PORT}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
+        volumes:
+            - ./shared_dags:/home/airflow/dags
+            - ./shared_plugins:/home/airflow/plugins
+            - ./shared_logs:/home/airflow/logs
+            - ./shared_data:/home/airflow/data
+        network_mode: "host"
+        command: webserver
+        mem_limit: 1000000000 #must be in bytes
+        memswap_limit: 2000000000
+        mem_swappiness: 1
+        cpus: 1
+        cpu_percent: 50
+
+    airflow-flower:
+        image: local/airflow:1.9.0
+        restart: always
+        depends_on:
+            - redis
+        environment:
+            - AIRFLOW_PORT=${AIRFLOW_PORT}
+            - FLOWER_PORT=${FLOWER_PORT}
+            - WORKER_LOG_PORT=${WORKER_LOG_PORT}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - EXECUTOR=${EXECUTOR}
+        network_mode: "host"
+        command: flower
+        mem_limit: 1000000000 #must be in bytes
+        memswap_limit: 2000000000
+        mem_swappiness: 1
+        cpus: 1
+        cpu_percent: 50
+
+    airflow-scheduler:
+        image: local/airflow:1.9.0
+        restart: always
+        depends_on:
+            - airflow-webserver
+        volumes:
+            - ./shared_dags:/home/airflow/dags
+            - ./shared_plugins:/home/airflow/plugins
+            - ./shared_logs:/home/airflow/logs
+            - ./shared_data:/home/airflow/data
+        environment:
+            - AIRFLOW_PORT=${AIRFLOW_PORT}
+            - FLOWER_PORT=${FLOWER_PORT}
+            - WORKER_LOG_PORT=${WORKER_LOG_PORT}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - LOAD_EXAMPLES=${LOAD_EXAMPLES}
+            - EXECUTOR=${EXECUTOR}
+            - POSTGRES_HOST=${POSTGRES_HOST}
+            - POSTGRES_PORT=${POSTGRES_PORT}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
+        network_mode: "host"
+        command: scheduler
+        mem_limit: 1000000000 #must be in bytes
+        memswap_limit: 2000000000
+        mem_swappiness: 1
+        cpus: 1
+        cpu_percent: 50
+
+    airflow-worker:
+        image: local/airflow:1.9.0
+        restart: always
+        depends_on:
+            - airflow-scheduler
+        volumes:
+            - ./shared_dags:/home/airflow/dags
+            - ./shared_plugins:/home/airflow/plugins
+            - ./shared_logs:/home/airflow/logs
+            - ./shared_data:/home/airflow/data
+        environment:
+            - AIRFLOW_PORT=${AIRFLOW_PORT}
+            - FLOWER_PORT=${FLOWER_PORT}
+            - WORKER_LOG_PORT=${WORKER_LOG_PORT}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - LOAD_EXAMPLES=${LOAD_EXAMPLES}
+            - EXECUTOR=${EXECUTOR}
+            - POSTGRES_HOST=${POSTGRES_HOST}
+            - POSTGRES_PORT=${POSTGRES_PORT}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
+        network_mode: "host"
+        command: worker
+        mem_limit: 4000000000 #must be in bytes
+        memswap_limit: 6000000000
+        mem_swappiness: 1
+        cpus: 4
+        cpu_percent: 50
